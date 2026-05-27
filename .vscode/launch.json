@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/baominhtran/Desktop/OOP_HW03_Package_202602/OOP_HW03_202602_Template_NET2019",
+      "program": "/Users/baominhtran/Desktop/OOP_HW03_Package_202602/OOP_HW03_202602_Template_NET2019/build/Debug/outDebug"
+    }
+  ]
+}
