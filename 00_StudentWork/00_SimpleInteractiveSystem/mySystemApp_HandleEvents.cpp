@@ -1,6 +1,6 @@
 //********************************************
-// Student Name			:
-// Student ID			:
+// Student Name			: Tran Bao Minh
+// Student ID			: 114550207
 //
 // Instructor: Sai-Keung WONG
 // Email:	cswingo@cs.nctu.edu.tw
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#define cn_StudentInfo "OOP ---------- Student Name:xyz. ID:012345678."
+#define cn_StudentInfo "OOP ---------- Student Name:Tran Bao Minh. ID:114550207."
 
 void MY_SYSTEM_APP::askForInput( )
 {
