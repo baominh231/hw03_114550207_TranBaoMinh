@@ -363,10 +363,10 @@ void GRAPH_SYSTEM::askForInput( )
     cout << "GRAPH_SYSTEM" << endl;
     cout << "Key usage:" << endl;
     cout << "1: create a default graph" << endl;
-    cout << "2: create a graph ..." << endl;
-    cout << "3: create a graph ..." << endl;
-    cout << "4: create a graph ..." << endl;
-    cout << "5: create a graph ..." << endl;
+    cout << "2: create a Circular Net graph" << endl;
+    cout << "3: create a Square Net graph" << endl;
+    cout << "4: create a Radical Circular graph" << endl;
+    cout << "5: create a Double Circles graph" << endl;
     cout << "Delete: delete a selected node and all the edges incident to it" << endl;
     cout << "Spacebar: Change operation" << endl;
     cout << " " << endl;
