@@ -348,29 +348,28 @@ void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
 }
 
 void GRAPH_SYSTEM::createNet_RadicalCircular( int n ) {
+	
+float R = 50.0f;
 
-    reset( );
+int center =
+    addNode(offset_x, 0.0f, offset_z, r);
 
-    float offset_x = 90.0;
-    float offset_z = 15.0;
+for(int i = 0; i < n; i++)
+{
+    float theta =
+        2.0f * 3.1415926f * i / n;
 
-    float r = 15; // radius
+    float x =
+        offset_x + R * cos(theta);
 
-    //
-    // modify and add your code heres
-    //
+    float z =
+        offset_z + R * sin(theta);
 
-    // One center node connected to n outer nodes arranged in a circle.
-    // No ring edges between outer nodes.
-    if (n <= 0) return;
-    int centerNode = addNode(offset_x, 0.0, offset_z);
-    for (int i = 0; i < n; ++i) {
-        float angle = 2.0f * (float)M_PI * i / n;
-        int outerNode = addNode(
-            offset_x + r * cos(angle), 0.0,
-            offset_z + r * sin(angle));
-        addEdge(centerNode, outerNode);
-	}
+    int outer =
+        addNode(x, 0.0f, z, r);
+
+    addEdge(center, outer);
+}
 }
 
 //
@@ -386,12 +385,22 @@ int GRAPH_SYSTEM::addNode( float x, float y, float z, float r )
     //
     GRAPH_NODE* g = getFreeNode();
     if (!g) return -1;
- 
-    g->p.x = x; g->p.y = y; g->p.z = z; g->r = r;
-    g->edgeID.clear();
-    g->visited = false;
-    g->depth = 0;
-    return g->id;
+
+	GRAPH_NODE *g = getFreeNode();
+
+if (g == 0) return -1;
+
+g->p = vector3(x, y, z);
+g->r = r;
+
+g->visited = false;
+g->depth = 0;
+g->path_cost = 0;
+g->path_parent = 0;
+
+g->edgeID.clear();
+
+return g->id;
 
 }
 
@@ -419,12 +428,14 @@ int GRAPH_SYSTEM::addEdge( int nodeID_0, int nodeID_1 )
     }
     GRAPH_EDGE *e = getFreeEdge();
     if (!e) return -1;
-    e->nodeID[0] = nodeID_0;
-    e->nodeID[1] = nodeID_1;
-    mNodeArr_Pool[nodeID_0].edgeID.push_back(e->id);
-    mNodeArr_Pool[nodeID_1].edgeID.push_back(e->id);
-    return e->id;
-    return -1;
+
+e->nodeID[0] = nodeID_0;
+e->nodeID[1] = nodeID_1;
+
+mNodeArr_Pool[nodeID_0].edgeID.push_back(e->id);
+mNodeArr_Pool[nodeID_1].edgeID.push_back(e->id);
+
+return e->id;
 }
 
 void GRAPH_SYSTEM::askForInput( )
