@@ -867,20 +867,25 @@ void GRAPH_SYSTEM::computeShortestPath(GRAPH_NODE *node)
     }
 }
 
-void GRAPH_SYSTEM::computeShortestPath()
-{
-    //
-    // modify and add your code heres
-    //
-    // reset path information of all nodes
-    // if mStartNode == nullptr || mDestinationNode == nullptr, return
-    // invokte computeShortestPath with mStartNode
-    //
-	
+void GRAPH_SYSTEM::computeShortestPath() {
     resetPathInformationOfAllNodes();
-    if (mStartNode == nullptr || mDestinationNode == nullptr) return;
     mStartNode->path_cost = 0.0;
-    computeShortestPath(mStartNode);
+
+    // Min-heap: luôn xử lý node có cost nhỏ nhất trước
+    priority_queue<pair<double,int>, vector<...>, greater<...>> pq;
+    pq.push({0.0, mStartNode->id});
+
+    while (!pq.empty()) {
+        auto [curCost, curID] = pq.top(); pq.pop();
+        if (curCost > cur->path_cost) continue; // stale entry, bỏ qua
+
+        // Relax tất cả edges kề
+        for each edge of cur:
+            if (cur->path_cost + d < next->path_cost):
+                next->path_cost = cur->path_cost + d
+                next->path_parent = cur
+                pq.push({newCost, next->id})
+    }
 }
 
 void GRAPH_SYSTEM::handleKeyPressedEvent( unsigned char key )
