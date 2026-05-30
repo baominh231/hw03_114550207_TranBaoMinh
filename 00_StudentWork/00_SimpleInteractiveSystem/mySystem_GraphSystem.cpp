@@ -881,9 +881,7 @@ void GRAPH_SYSTEM::computeShortestPath()
 
     mStartNode->path_cost = 0.0;
  
-    int numNodes = getNumOfNodes();
- 
-    for (int iter = 0; iter < numNodes - 1; ++iter) {
+    while (true) {
         bool updated = false;
         int numEdges = getNumOfEdges();
         for (int ei = 0; ei < numEdges; ++ei) {
@@ -920,7 +918,7 @@ void GRAPH_SYSTEM::computeShortestPath()
     for (int i = (int)tempPath.size() - 1; i >= 0; --i) {
         mPaths.push_back(tempPath[i]);
     }
-}      
+}   
 
 void GRAPH_SYSTEM::handleKeyPressedEvent( unsigned char key )
 {
