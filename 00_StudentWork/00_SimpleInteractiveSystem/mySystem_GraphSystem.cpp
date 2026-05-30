@@ -346,30 +346,37 @@ void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
     for (int i = 0; i < total; ++i) delete[] grid[i];
     delete[] grid;
 }
-
-void GRAPH_SYSTEM::createNet_RadicalCircular( int n ) {
 	
-float R = 50.0f;
+void GRAPH_SYSTEM::createNet_RadicalCircular( int n ) {
 
-int center =
-    addNode(offset_x, 0.0f, offset_z, r);
+    reset();
 
-for(int i = 0; i < n; i++)
-{
-    float theta =
-        2.0f * 3.1415926f * i / n;
+    float offset_x = 90.0;
+    float offset_z = 15.0;
 
-    float x =
-        offset_x + R * cos(theta);
+    float r = 15;
 
-    float z =
-        offset_z + R * sin(theta);
+    float R = 50.0f;
 
-    int outer =
-        addNode(x, 0.0f, z, r);
+    int center =
+        addNode(offset_x, 0.0f, offset_z, r);
 
-    addEdge(center, outer);
-}
+    for(int i = 0; i < n; i++)
+    {
+        float theta =
+            2.0f * 3.1415926f * i / n;
+
+        float x =
+            offset_x + R * cos(theta);
+
+        float z =
+            offset_z + R * sin(theta);
+
+        int outer =
+            addNode(x, 0.0f, z, r);
+
+        addEdge(center, outer);
+    }
 }
 
 //
