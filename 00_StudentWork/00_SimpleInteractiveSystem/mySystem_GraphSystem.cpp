@@ -347,42 +347,42 @@ void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
     delete[] grid;
 }
 	
-void GRAPH_SYSTEM::createNet_RadicalCircular( int n ) {
+void GRAPH_SYSTEM::createNet_RadialCircular( int n ) {
 
+    // Xóa toàn bộ dữ liệu đồ thị cũ trước khi vẽ lưới mới
     reset();
 
-    float offset_x = 90.0;
-    float offset_z = 15.0;
+    // Tọa độ tâm của vòng tròn hệ thống
+    float offset_x = 90.0f;
+    float offset_z = 15.0f;
 
-    float r = 15;
+    // Bán kính hiển vi/kích thước của từng node (nếu có)
+    float r = 15.0f; 
 
+    // Bán kính từ tâm đến các node vòng ngoài
     float R = 50.0f;
 
-    int center =
-        addNode(offset_x, 0.0f, offset_z, r);
+    // 1. Tạo node làm tâm ở chính giữa
+    int center = addNode(offset_x, 0.0f, offset_z, r);
 
+    // 2. Vòng lặp tạo n node xung quanh và nối dây vào tâm
     for(int i = 0; i < n; i++)
     {
-        float theta =
-            2.0f * 3.1415926f * i / n;
+        // Tính góc theta cho từng node (chia đều 2 * PI)
+        float theta = 2.0f * 3.1415926f * (float)i / (float)n;
 
-        float x =
-            offset_x + R * cos(theta);
+        // Tính toán tọa độ X và Z dựa trên hệ tọa độ cực
+        float x = offset_x + R * cos(theta);
+        float z = offset_z + R * sin(theta);
 
-        float z =
-            offset_z + R * sin(theta);
+        // Tạo node ngoài tại vị trí (x, 0, z)
+        int outer = addNode(x, 0.0f, z, r);
 
-        int outer =
-            addNode(x, 0.0f, z, r);
-
+        // Nối cạnh từ tâm (center) đến node ngoài (outer)
         addEdge(center, outer);
     }
 }
 
-//
-// return the node id
-// return -1: no free node
-//
 int GRAPH_SYSTEM::addNode( float x, float y, float z, float r )
 {
     //GRAPH_NODE *g;
