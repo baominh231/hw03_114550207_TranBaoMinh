@@ -181,40 +181,53 @@ void GRAPH_SYSTEM::createRandomGraph_DoubleCircles(int n)
     //n = 36;
     float dx = 5.0;
     float dz = 5.0;
-    float r_inner = 10; // inner radius
-    float r_outer = 20; // outer radius
+    float r_inner = 10; // inner circle radius
+    float r_outer = 20; // outer circle radius
     float offset_x = 90.;
     float offset_z = 15.;
     //
     // modify and add your code heres
     //
 
-    // Each circle has n nodes (total = 2n nodes)
+    // There are n nodes in each circle (total 2n nodes).
+    // NO ring edges within each circle.
+    // For each inner node, connect it to a randomly chosen outer node
+    // such that the connecting edge does NOT intersect the inner circle.
     if (n <= 0) return;
+
+    srand((unsigned int)time(NULL));
+
     int* innerNodes = new int[n];
     int* outerNodes = new int[n];
 
-    // Inner circle: n nodes
+    // Create inner circle nodes (no ring edges)
     for (int i = 0; i < n; ++i) {
-        float angle = 2.0 * M_PI * i / n;
-        innerNodes[i] = addNode(offset_x + r_inner * cos(angle), 0.0, offset_z + r_inner * sin(angle));
-    }
-    for (int i = 0; i < n; ++i) {
-        addEdge(innerNodes[i], innerNodes[(i + 1) % n]);
-    }
-
-    // Outer circle: n nodes
-    for (int i = 0; i < n; ++i) {
-        float angle = 2.0 * M_PI * i / n;
-        outerNodes[i] = addNode(offset_x + r_outer * cos(angle), 0.0, offset_z + r_outer * sin(angle));
-    }
-    for (int i = 0; i < n; ++i) {
-        addEdge(outerNodes[i], outerNodes[(i + 1) % n]);
+        float angle = 2.0f * (float)M_PI * i / n;
+        innerNodes[i] = addNode(
+            offset_x + r_inner * cos(angle), 0.0,
+            offset_z + r_inner * sin(angle));
     }
 
-    // Connect each inner node to the corresponding outer node
+    // Create outer circle nodes (no ring edges)
     for (int i = 0; i < n; ++i) {
-        addEdge(innerNodes[i], outerNodes[i]);
+        float angle = 2.0f * (float)M_PI * i / n;
+        outerNodes[i] = addNode(
+            offset_x + r_outer * cos(angle), 0.0,
+            offset_z + r_outer * sin(angle));
+    }
+
+    // For each inner node, pick a random outer node whose edge does not
+    // cross the inner circle.
+    // An edge from innerNodes[i] to outerNodes[j] crosses the inner circle
+    // if the two nodes are NOT adjacent (close enough in angle).
+    // Simple rule: the edge does not cross inner circle if the outer node
+    // is "close" to the inner node, i.e. within a small arc difference.
+    // We allow a random offset within [-1, 0, +1] index of matching position.
+    for (int i = 0; i < n; ++i) {
+        // random offset in range [-2, 2]
+        int offset = (rand() % 5) - 2;
+        int j = ((i + offset) % n + n) % n;
+        addEdge(innerNodes[i], outerNodes[j]);
     }
 
     delete[] innerNodes;
@@ -235,8 +248,10 @@ void GRAPH_SYSTEM::createNet_Circular( int n, int num_layers )
     //
     // modify and add your code heres
     //
-    // There are num_layers inner layers (with ring edges) and 1 outer layer (no ring edges).
-    // Radial edges connect adjacent layers including the outer layer.
+    // num_layers inner layers (with ring edges between nodes in same layer
+    // AND radial edges between adjacent layers).
+    // 1 outer layer (only radial edges connecting to the last inner layer,
+    // NO ring edges within the outer layer).
 
     if (n <= 0 || num_layers <= 0) return;
 
@@ -247,8 +262,10 @@ void GRAPH_SYSTEM::createNet_Circular( int n, int num_layers )
         layers[l] = new int[n];
         float cur_r = r + l * d;
         for (int i = 0; i < n; ++i) {
-            float angle = 2.0 * M_PI * i / n;
-            layers[l][i] = addNode(offset_x + cur_r * cos(angle), 0.0, offset_z + cur_r * sin(angle));
+            float angle = 2.0f * (float)M_PI * i / n;
+            layers[l][i] = addNode(
+                offset_x + cur_r * cos(angle), 0.0,
+                offset_z + cur_r * sin(angle));
         }
     }
 
@@ -282,37 +299,49 @@ void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
     //
     // modify and add your code heres
     //
-    // Creates a hollow square net: only border nodes are kept,
-    // interior nodes are removed (not created).
+    // n = number of vertices of the inner (hollow) square side.
+    // num_layers = thickness of the frame (number of vertex rows on each side).
+    // Total width = n + 2 * (num_layers - 1)
+    // The hollow interior has size n x n (no nodes created there).
 
     if (n <= 0 || num_layers <= 0) return;
 
-    int** grid = new int*[num_layers];
-    for (int i = 0; i < num_layers; ++i) {
-        grid[i] = new int[n];
-        for (int j = 0; j < n; ++j) {
-            // Only create border nodes; interior = -1 (no node)
-            bool isBorder = (i == 0 || i == num_layers - 1 || j == 0 || j == n - 1);
-            if (isBorder)
-                grid[i][j] = addNode(offset_x + j * dx, 0.0, offset_z + i * dz);
-            else
-                grid[i][j] = -1;
+    int total = n + 2 * (num_layers - 1); // total nodes per row/col
+    int** grid = new int*[total];
+    for (int i = 0; i < total; ++i) {
+        grid[i] = new int[total];
+        for (int j = 0; j < total; ++j) {
+            grid[i][j] = -1;
         }
     }
 
-    for (int i = 0; i < num_layers; ++i) {
-        for (int j = 0; j < n; ++j) {
+    // Create nodes only in the frame region (exclude hollow interior).
+    // Interior = rows [num_layers-1 .. total-num_layers] x cols [num_layers-1 .. total-num_layers]
+    // But only the outer num_layers rows/cols on each side get nodes.
+    for (int i = 0; i < total; ++i) {
+        for (int j = 0; j < total; ++j) {
+            bool inFrame = (i < num_layers) || (i >= total - num_layers) ||
+                           (j < num_layers) || (j >= total - num_layers);
+            if (inFrame) {
+                grid[i][j] = addNode(offset_x + j * dx, 0.0, offset_z + i * dz);
+            }
+        }
+    }
+
+    // Add edges between adjacent nodes (right and down)
+    for (int i = 0; i < total; ++i) {
+        for (int j = 0; j < total; ++j) {
             if (grid[i][j] == -1) continue;
             // Connect right neighbor
-            if (j < n - 1 && grid[i][j + 1] != -1)
+            if (j < total - 1 && grid[i][j + 1] != -1)
                 addEdge(grid[i][j], grid[i][j + 1]);
             // Connect bottom neighbor
-            if (i < num_layers - 1 && grid[i + 1][j] != -1)
+            if (i < total - 1 && grid[i + 1][j] != -1)
                 addEdge(grid[i][j], grid[i + 1][j]);
         }
     }
 
-    for (int i = 0; i < num_layers; ++i) delete[] grid[i];
+    for (int i = 0; i < total; ++i) delete[] grid[i];
     delete[] grid;
 }
 
@@ -329,11 +358,15 @@ void GRAPH_SYSTEM::createNet_RadicalCircular( int n ) {
     // modify and add your code heres
     //
 
+    // One center node connected to n outer nodes arranged in a circle.
+    // No ring edges between outer nodes.
     if (n <= 0) return;
     int centerNode = addNode(offset_x, 0.0, offset_z);
     for (int i = 0; i < n; ++i) {
-        float angle = 2.0 * M_PI * i / n;
-        int outerNode = addNode(offset_x + r * cos(angle), 0.0, offset_z + r * sin(angle));
+        float angle = 2.0f * (float)M_PI * i / n;
+        int outerNode = addNode(
+            offset_x + r * cos(angle), 0.0,
+            offset_z + r * sin(angle));
         addEdge(centerNode, outerNode);
 	}
 }
