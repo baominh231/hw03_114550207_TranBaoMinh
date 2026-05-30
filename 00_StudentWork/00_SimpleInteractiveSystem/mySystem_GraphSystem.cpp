@@ -901,12 +901,13 @@ void GRAPH_SYSTEM::computeShortestPath()
         if (!updated) break;
     }
 
+    mPaths.clear();
     if (mDestinationNode->path_cost == SYS_CONSTANTS::max_double) return;
 
     GRAPH_NODE* curr = mDestinationNode;
     while (curr != nullptr) {
-        curr->is_on_shortest_path = true; 
-        curr = curr->path_parent; 
+        mPaths.push_back(curr);
+        curr = curr->path_parent;
     }
 }
 
