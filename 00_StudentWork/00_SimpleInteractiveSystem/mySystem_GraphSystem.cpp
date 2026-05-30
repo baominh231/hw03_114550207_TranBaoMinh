@@ -871,6 +871,7 @@ void GRAPH_SYSTEM::computeShortestPath()
 {
     resetPathInformationOfAllNodes();
     if (mStartNode == nullptr || mDestinationNode == nullptr) return;
+    
     mStartNode->path_cost = 0.0;
  
     int numNodes = getNumOfNodes();
@@ -885,14 +886,12 @@ void GRAPH_SYSTEM::computeShortestPath()
             GRAPH_NODE* n1 = &mNodeArr_Pool[e->nodeID[1]];
             double d = n0->p.distance(n1->p);
  
-            if (n0->path_cost != SYS_CONSTANTS::max_double &&
-                n0->path_cost + d < n1->path_cost) {
+            if (n0->path_cost < 1e9 && n0->path_cost + d < n1->path_cost) {
                 n1->path_cost   = n0->path_cost + d;
                 n1->path_parent = n0;
                 updated = true;
             }
-            if (n1->path_cost != SYS_CONSTANTS::max_double &&
-                n1->path_cost + d < n0->path_cost) {
+            if (n1->path_cost < 1e9 && n1->path_cost + d < n0->path_cost) {
                 n0->path_cost   = n1->path_cost + d;
                 n0->path_parent = n1;
                 updated = true;
@@ -902,14 +901,20 @@ void GRAPH_SYSTEM::computeShortestPath()
     }
 
     mPaths.clear();
-    if (mDestinationNode->path_cost == SYS_CONSTANTS::max_double) return;
+    if (mDestinationNode->path_cost >= 1e9) return;
 
+    vector<GRAPH_NODE*> tempPath;
     GRAPH_NODE* curr = mDestinationNode;
     while (curr != nullptr) {
-        mPaths.push_back(curr);
+        tempPath.push_back(curr);
         curr = curr->path_parent;
     }
+
+    for (int i = (int)tempPath.size() - 1; i >= 0; --i) {
+        mPaths.push_back(tempPath[i]);
+    }
 }
+          
 
 void GRAPH_SYSTEM::handleKeyPressedEvent( unsigned char key )
 {
