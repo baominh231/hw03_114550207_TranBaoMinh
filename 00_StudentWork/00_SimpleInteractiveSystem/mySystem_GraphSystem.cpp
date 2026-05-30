@@ -869,56 +869,28 @@ void GRAPH_SYSTEM::computeShortestPath(GRAPH_NODE *node)
 
 void GRAPH_SYSTEM::computeShortestPath()
 {
-    //
-    // modify and add your code heres
-    //
-    // reset path information of all nodes
-    // if mStartNode == nullptr || mDestinationNode == nullptr, return
-    // invokte computeShortestPath with mStartNode
-    //
- 
     resetPathInformationOfAllNodes();
     if (mStartNode == nullptr || mDestinationNode == nullptr) return;
     mStartNode->path_cost = 0.0;
-
+ 
     int numNodes = getNumOfNodes();
  
     for (int iter = 0; iter < numNodes - 1; ++iter) {
         bool updated = false;
- 
-        // Loop over all active edges
         int numEdges = getNumOfEdges();
         for (int ei = 0; ei < numEdges; ++ei) {
-            //
-            // modify and add your code heres
-            //
-            // get an edge
-            // determine the next node. Set it as the current node.
-            // compute distance d: node->p.distance(next->p);
-            // if new path cost is not better, check for the other edges
-            // if new path cost is better, update the node's path cost and path_parent
-            // Also, invokte computeShortestPath for the current node.
-            //int edgeID = node->edgeID[i];
-            //GRAPH_EDGE* e = &mEdgeArr_Pool[edgeID];
-            //GRAPH_NODE* n0 = &mNodeArr_Pool[e->nodeID[0]];
-            //GRAPH_NODE* n1 = &mNodeArr_Pool[e->nodeID[1]];
-            //
-            // modify and add your code heres
-            //
             int edgeID = mActiveEdgeArr[ei];
             GRAPH_EDGE* e = &mEdgeArr_Pool[edgeID];
             GRAPH_NODE* n0 = &mNodeArr_Pool[e->nodeID[0]];
             GRAPH_NODE* n1 = &mNodeArr_Pool[e->nodeID[1]];
             double d = n0->p.distance(n1->p);
  
-            // Relax edge n0 -> n1
             if (n0->path_cost != SYS_CONSTANTS::max_double &&
                 n0->path_cost + d < n1->path_cost) {
                 n1->path_cost   = n0->path_cost + d;
                 n1->path_parent = n0;
                 updated = true;
             }
-            // Relax edge n1 -> n0 (undirected graph)
             if (n1->path_cost != SYS_CONSTANTS::max_double &&
                 n1->path_cost + d < n0->path_cost) {
                 n0->path_cost   = n1->path_cost + d;
@@ -926,9 +898,15 @@ void GRAPH_SYSTEM::computeShortestPath()
                 updated = true;
             }
         }
- 
-        // Early exit if no update happened — already optimal
         if (!updated) break;
+    }
+
+    if (mDestinationNode->path_cost == SYS_CONSTANTS::max_double) return;
+
+    GRAPH_NODE* curr = mDestinationNode;
+    while (curr != nullptr) {
+        curr->is_on_shortest_path = true; 
+        curr = curr->path_parent; 
     }
 }
 
