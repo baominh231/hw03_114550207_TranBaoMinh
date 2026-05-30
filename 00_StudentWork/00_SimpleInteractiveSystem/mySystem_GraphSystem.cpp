@@ -17,6 +17,13 @@
 #include <iostream>
 #include "mySystem_GraphSystem.h"
 #include <time.h>
+#include <climits>
+#include <cfloat>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 using namespace std;
 
@@ -27,6 +34,7 @@ namespace SYS_CONSTANTS {
 
 int Param::GRAPH_MAX_NUM_NODES = 10000;
 int Param::GRAPH_MAX_NUM_EDGES = 10000;
+
 
 GRAPH_SYSTEM::GRAPH_SYSTEM( )
 {
@@ -147,6 +155,8 @@ void GRAPH_SYSTEM::createDefaultGraph( )
     float offset_x = 90.;
     float offset_z = 15.;
 
+    // Default graph: 3 nodes forming an L-shape (not collinear)
+    // n_0: top-left, n_1: bottom-left, n_2: bottom-right
     int n_0 = addNode(offset_x + 0.0, 0.0, offset_z + 0.0 );
     cout << "n_0:"<< n_0 << endl;
 
@@ -156,8 +166,8 @@ void GRAPH_SYSTEM::createDefaultGraph( )
 
     //addEdge( n_0, n_1 );
     //addEdge( n_1, n_2 );
-	int n_1 = addNode(offset_x + 20.0, 0.0, offset_z + 0.0);
-    int n_2 = addNode(offset_x + 40.0, 0.0, offset_z + 0.0);
+    int n_1 = addNode(offset_x + 0.0,  0.0, offset_z + 20.0);
+    int n_2 = addNode(offset_x + 20.0, 0.0, offset_z + 20.0);
 
     addEdge(n_0, n_1);
     addEdge(n_1, n_2);
@@ -171,41 +181,39 @@ void GRAPH_SYSTEM::createRandomGraph_DoubleCircles(int n)
     //n = 36;
     float dx = 5.0;
     float dz = 5.0;
-    float r = 15; // radius
-    float d = 10; // layer distance
+    float r_inner = 10; // inner radius
+    float r_outer = 20; // outer radius
     float offset_x = 90.;
     float offset_z = 15.;
     //
     // modify and add your code heres
     //
 
+    // Each circle has n nodes (total = 2n nodes)
     if (n <= 0) return;
-    int half_n = n / 2;
-    int* innerNodes = new int[half_n];
-    int* outerNodes = new int[n - half_n];
+    int* innerNodes = new int[n];
+    int* outerNodes = new int[n];
 
-    // Tạo vòng tròn bên trong
-    for (int i = 0; i < half_n; ++i) {
-        float angle = 2.0 * M_PI * i / half_n;
-        innerNodes[i] = addNode(offset_x + r * cos(angle), 0.0, offset_z + r * sin(angle));
+    // Inner circle: n nodes
+    for (int i = 0; i < n; ++i) {
+        float angle = 2.0 * M_PI * i / n;
+        innerNodes[i] = addNode(offset_x + r_inner * cos(angle), 0.0, offset_z + r_inner * sin(angle));
     }
-    for (int i = 0; i < half_n; ++i) {
-        addEdge(innerNodes[i], innerNodes[(i + 1) % half_n]);
-    }
-
-    // Tạo vòng tròn bên ngoài
-    int num_outer = n - half_n;
-    for (int i = 0; i < num_outer; ++i) {
-        float angle = 2.0 * M_PI * i / num_outer;
-        outerNodes[i] = addNode(offset_x + (r + d) * cos(angle), 0.0, offset_z + (r + d) * sin(angle));
-    }
-    for (int i = 0; i < num_outer; ++i) {
-        addEdge(outerNodes[i], outerNodes[(i + 1) % num_outer]);
+    for (int i = 0; i < n; ++i) {
+        addEdge(innerNodes[i], innerNodes[(i + 1) % n]);
     }
 
-    // Nối liên kết giữa 2 tầng vòng tròn
-    int min_nodes = (half_n < num_outer) ? half_n : num_outer;
-    for (int i = 0; i < min_nodes; ++i) {
+    // Outer circle: n nodes
+    for (int i = 0; i < n; ++i) {
+        float angle = 2.0 * M_PI * i / n;
+        outerNodes[i] = addNode(offset_x + r_outer * cos(angle), 0.0, offset_z + r_outer * sin(angle));
+    }
+    for (int i = 0; i < n; ++i) {
+        addEdge(outerNodes[i], outerNodes[(i + 1) % n]);
+    }
+
+    // Connect each inner node to the corresponding outer node
+    for (int i = 0; i < n; ++i) {
         addEdge(innerNodes[i], outerNodes[i]);
     }
 
@@ -219,7 +227,7 @@ void GRAPH_SYSTEM::createNet_Circular( int n, int num_layers )
 
     float dx = 5.0;
     float dz = 5.0;
-    float r = 5; // radius
+    float r = 5; // radius of innermost layer
     float d = 5; // layer distance 
     float offset_x = 90.;
     float offset_z = 30.;
@@ -227,10 +235,15 @@ void GRAPH_SYSTEM::createNet_Circular( int n, int num_layers )
     //
     // modify and add your code heres
     //
-	
+    // There are num_layers inner layers (with ring edges) and 1 outer layer (no ring edges).
+    // Radial edges connect adjacent layers including the outer layer.
+
     if (n <= 0 || num_layers <= 0) return;
-    int** layers = new int*[num_layers];
-    for (int l = 0; l < num_layers; ++l) {
+
+    int total_layers = num_layers + 1; // num_layers inner + 1 outer
+    int** layers = new int*[total_layers];
+
+    for (int l = 0; l < total_layers; ++l) {
         layers[l] = new int[n];
         float cur_r = r + l * d;
         for (int i = 0; i < n; ++i) {
@@ -238,17 +251,24 @@ void GRAPH_SYSTEM::createNet_Circular( int n, int num_layers )
             layers[l][i] = addNode(offset_x + cur_r * cos(angle), 0.0, offset_z + cur_r * sin(angle));
         }
     }
-    for (int l = 0; l < num_layers; ++l) {
+
+    for (int l = 0; l < total_layers; ++l) {
         for (int i = 0; i < n; ++i) {
-            addEdge(layers[l][i], layers[l][(i + 1) % n]);
-            if (l < num_layers - 1) {
+            // Ring edges: only for inner layers, NOT the outermost layer
+            if (l < num_layers) {
+                addEdge(layers[l][i], layers[l][(i + 1) % n]);
+            }
+            // Radial edges connecting adjacent layers (including to outer layer)
+            if (l < total_layers - 1) {
                 addEdge(layers[l][i], layers[l + 1][i]);
             }
         }
     }
-    for (int l = 0; l < num_layers; ++l) delete[] layers[l];
+
+    for (int l = 0; l < total_layers; ++l) delete[] layers[l];
     delete[] layers;
 }
+
 void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
 {
     reset( );
@@ -262,21 +282,36 @@ void GRAPH_SYSTEM::createNet_Square( int n, int num_layers )
     //
     // modify and add your code heres
     //
+    // Creates a hollow square net: only border nodes are kept,
+    // interior nodes are removed (not created).
 
     if (n <= 0 || num_layers <= 0) return;
+
     int** grid = new int*[num_layers];
     for (int i = 0; i < num_layers; ++i) {
         grid[i] = new int[n];
         for (int j = 0; j < n; ++j) {
-            grid[i][j] = addNode(offset_x + j * dx, 0.0, offset_z + i * dz);
+            // Only create border nodes; interior = -1 (no node)
+            bool isBorder = (i == 0 || i == num_layers - 1 || j == 0 || j == n - 1);
+            if (isBorder)
+                grid[i][j] = addNode(offset_x + j * dx, 0.0, offset_z + i * dz);
+            else
+                grid[i][j] = -1;
         }
     }
+
     for (int i = 0; i < num_layers; ++i) {
         for (int j = 0; j < n; ++j) {
-            if (j < n - 1) addEdge(grid[i][j], grid[i][j + 1]);
-            if (i < num_layers - 1) addEdge(grid[i][j], grid[i + 1][j]);
+            if (grid[i][j] == -1) continue;
+            // Connect right neighbor
+            if (j < n - 1 && grid[i][j + 1] != -1)
+                addEdge(grid[i][j], grid[i][j + 1]);
+            // Connect bottom neighbor
+            if (i < num_layers - 1 && grid[i + 1][j] != -1)
+                addEdge(grid[i][j], grid[i + 1][j]);
         }
     }
+
     for (int i = 0; i < num_layers; ++i) delete[] grid[i];
     delete[] grid;
 }
@@ -314,15 +349,15 @@ int GRAPH_SYSTEM::addNode( float x, float y, float z, float r )
     //
     // modify and add your code heres
     //
-	
-    GRAPH_NODE *g = getFreeNode();
+    GRAPH_NODE* g = getFreeNode();
     if (!g) return -1;
+ 
     g->p.x = x; g->p.y = y; g->p.z = z; g->r = r;
     g->edgeID.clear();
     g->visited = false;
     g->depth = 0;
     return g->id;
-    return -1;
+
 }
 
 //
@@ -336,6 +371,8 @@ int GRAPH_SYSTEM::addEdge( int nodeID_0, int nodeID_1 )
     //
     // modify and add your code heres
     //
+
+    if (nodeID_0 < 0 || nodeID_1 < 0) return -1;
 
     GRAPH_NODE *n0 = &mNodeArr_Pool[nodeID_0];
     for (size_t i = 0; i < n0->edgeID.size(); ++i) {
@@ -378,27 +415,33 @@ void GRAPH_SYSTEM::askForInput( )
 }
 
 
-GRAPH_NODE *GRAPH_SYSTEM::findNearestNode( double x, double z, double &cur_distance2 ) const
+GRAPH_NODE* GRAPH_SYSTEM::findNearestNode(
+    double x,
+    double z,
+    double& cur_distance2
+) const
 {
-    GRAPH_NODE *n = nullptr;
-    //cur_distance2 = -1.0;
-    //
-    // modify and add your code heres
-    //
-	
+    GRAPH_NODE* nearest = nullptr;
+
     cur_distance2 = SYS_CONSTANTS::max_double;
-    for (int i = 0; i < mCurNumOfActiveNodes; ++i) {
+
+    for (int i = 0; i < mCurNumOfActiveNodes; ++i)
+    {
         int id = mActiveNodeArr[i];
-        GRAPH_NODE *n = &mNodeArr_Pool[id];
+        GRAPH_NODE* n = &mNodeArr_Pool[id];
+
         double dx = n->p.x - x;
         double dz = n->p.z - z;
-        double dist2 = dx*dx + dz*dz;
-        if (dist2 < cur_distance2) {
+        double dist2 = dx * dx + dz * dz;
+
+        if (dist2 < cur_distance2)
+        {
             cur_distance2 = dist2;
             nearest = n;
         }
     }
-    return n;
+
+    return nearest;
 }
 
 void GRAPH_SYSTEM::moveTo(double x, double y )
@@ -469,6 +512,8 @@ void GRAPH_SYSTEM::deleteEdge( int edgeID )
     //
     // modify and add your code heres
     //
+    GRAPH_EDGE* e = &mEdgeArr_Pool[edgeID];
+    int dynamicID = e->dynamicID;
 
     removeEdgeFromNode(e, e->nodeID[0]);
     removeEdgeFromNode(e, e->nodeID[1]);
@@ -482,15 +527,21 @@ void GRAPH_SYSTEM::deleteEdge( int edgeID )
     }
 }
 
-void GRAPH_SYSTEM::removeEdgeFromNode( const GRAPH_EDGE *e, int nodeID )
+
+void GRAPH_SYSTEM::removeEdgeFromNode(const GRAPH_EDGE* e, int nodeID)
 {
+    GRAPH_NODE* n = &mNodeArr_Pool[nodeID];
     //GRAPH_NODE *n = &mNodeArr_Pool[ nodeID ];
     //
     // modify and add your code heres
     //
 
-    for (auto it = n->edgeID.begin(); it != n->edgeID.end(); ++it) {
-        if (*it == e->id) {
+    for (std::vector<int>::iterator it = n->edgeID.begin();
+        it != n->edgeID.end();
+        ++it)
+    {
+        if (*it == e->id)
+        {
             n->edgeID.erase(it);
             break;
         }
@@ -499,7 +550,7 @@ void GRAPH_SYSTEM::removeEdgeFromNode( const GRAPH_EDGE *e, int nodeID )
 
 void GRAPH_SYSTEM::deleteEdgesOfNode( int nodeID )
 {
-   // GRAPH_NODE *n  = &mNodeArr_Pool[ nodeID ];
+    GRAPH_NODE *n  = &mNodeArr_Pool[ nodeID ];
     //
     // modify and add your code heres
     //
@@ -510,19 +561,21 @@ void GRAPH_SYSTEM::deleteEdgesOfNode( int nodeID )
 }
 
 void GRAPH_SYSTEM::deleteNode( int nodeID ) {
-    //if ( mCurNumOfActiveNodes <= 0 ) return;
-    //GRAPH_NODE *n = &mNodeArr_Pool[ nodeID ];
+    if ( mCurNumOfActiveNodes <= 0 ) return;
     //
     // modify and add your code heres
     //
+    GRAPH_NODE* n = &mNodeArr_Pool[nodeID];
+    int dynamicID = n->dynamicID;
 	
     deleteEdgesOfNode(nodeID);
     if (dynamicID < mCurNumOfActiveNodes) {
         int lastActiveNodeID = mActiveNodeArr[mCurNumOfActiveNodes - 1];
         mActiveNodeArr[dynamicID] = lastActiveNodeID;
         mNodeArr_Pool[lastActiveNodeID].dynamicID = dynamicID;
-        mFreeNodeArr[mCurNumOfFreeEdges] = nodeID;
-        ++mCurNumOfFreeEdges;
+       
+        mFreeNodeArr[mCurNumOfFreeNodes] = nodeID;
+        ++mCurNumOfFreeNodes;
         --mCurNumOfActiveNodes;
     }
 }
@@ -602,9 +655,9 @@ void GRAPH_SYSTEM::resetDepthOfAllNodes()
 
 * void k( Node *n, int depth ) {
 	if n is null, return
-	set ns depth to depth
+	set ns depth to depth
 	for each adjacent node m of n				; note m should not be n
-		if (ms depth < depth + 1) k(m, depth+1)
+		if (ms depth < depth + 1) k(m, depth+1)
 }
 
 void computeDepthOfAllNodesFromSelectedNode( ) {
