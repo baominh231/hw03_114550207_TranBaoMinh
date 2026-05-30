@@ -155,8 +155,10 @@ void GRAPH_SYSTEM::createDefaultGraph( )
     float offset_x = 90.;
     float offset_z = 15.;
 
-    // Default graph: 3 nodes forming an L-shape (not collinear)
-    // n_0: top-left, n_1: bottom-left, n_2: bottom-right
+    // Default graph: 3 nodes on the x-z plane.
+    // n_1 is the center/middle node connected to both n_0 and n_2.
+    // Layout: n_0=(0,0,0), n_1=(5,0,0) [center], n_2=(5,0,5) [top]
+    // Matches: addNode(0,0,0), addNode(5,0,0), addNode(5,0,5)
     int n_0 = addNode(offset_x + 0.0, 0.0, offset_z + 0.0 );
     cout << "n_0:"<< n_0 << endl;
 
@@ -166,10 +168,10 @@ void GRAPH_SYSTEM::createDefaultGraph( )
 
     //addEdge( n_0, n_1 );
     //addEdge( n_1, n_2 );
-    int n_1 = addNode(offset_x + 0.0,  0.0, offset_z + 20.0);
-    int n_2 = addNode(offset_x + 20.0, 0.0, offset_z + 20.0);
+    int n_1 = addNode(offset_x + 5.0, 0.0, offset_z + 0.0);
+    int n_2 = addNode(offset_x + 5.0, 0.0, offset_z + 5.0);
 
-    addEdge(n_0, n_1);
+    addEdge(n_1, n_0);
     addEdge(n_1, n_2);
 
 }
